@@ -1,5 +1,6 @@
-package com.sergeysav.drone
+package com.sergeysav.drone.property
 
+import com.sergeysav.drone.GPIO
 import kotlin.properties.ReadWriteProperty
 import kotlin.reflect.KProperty
 

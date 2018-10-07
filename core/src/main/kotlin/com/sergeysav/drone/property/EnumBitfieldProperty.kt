@@ -1,5 +1,6 @@
-package com.sergeysav.drone
+package com.sergeysav.drone.property
 
+import com.sergeysav.drone.BValued
 import kotlin.experimental.and
 import kotlin.experimental.inv
 import kotlin.experimental.or

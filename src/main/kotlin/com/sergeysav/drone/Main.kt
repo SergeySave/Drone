@@ -7,6 +7,8 @@ fun main(args: Array<String>) {
     val gpio = Pi4jGPIO()
     val mpu6050 = MPU6050(gpio, 0x68)
     
+    mpu6050.enable()
+    
     while (true) {
         println()
         println(mpu6050.accelerometer)

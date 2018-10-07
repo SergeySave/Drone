@@ -1,5 +1,9 @@
 package com.sergeysav.drone
 
+import com.sergeysav.drone.math.Vector3
+import com.sergeysav.drone.property.BooleanBitfieldProperty
+import com.sergeysav.drone.property.EnumBitfieldProperty
+import com.sergeysav.drone.property.I2CProperty
 import kotlin.experimental.or
 
 /**
@@ -93,8 +97,10 @@ class MPU6050(gpio: GPIO, address: Int) {
     
     var dlpf by EnumBitfieldProperty(0, 2, ::config, DLPF.values())
     var extSync by EnumBitfieldProperty(3, 5, ::config, ExtSync.values())
-    private var gyroRangeRaw by EnumBitfieldProperty(3, 4, ::gyroConfig, GyroRange.values())
-    private var accelRangeRaw by EnumBitfieldProperty(3, 4, ::accelConfig, AccelRange.values())
+    private var gyroRangeRaw by EnumBitfieldProperty(3, 4, ::gyroConfig,
+                                                                                  GyroRange.values())
+    private var accelRangeRaw by EnumBitfieldProperty(3, 4, ::accelConfig,
+                                                                                   AccelRange.values())
     var fifoOverflowInterruptEnable by BooleanBitfieldProperty(4, ::interruptEnable)
     var i2cMasterInterruptEnable by BooleanBitfieldProperty(3, ::interruptEnable)
     var dataReadyInterruptEnable by BooleanBitfieldProperty(0, ::interruptEnable)

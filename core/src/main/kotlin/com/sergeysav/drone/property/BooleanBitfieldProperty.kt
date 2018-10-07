@@ -1,4 +1,4 @@
-package com.sergeysav.drone
+package com.sergeysav.drone.property
 
 import kotlin.experimental.and
 import kotlin.experimental.inv
