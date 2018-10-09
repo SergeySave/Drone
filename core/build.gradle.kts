@@ -14,7 +14,10 @@ repositories {
 
 dependencies {
     compile(kotlin("stdlib-jdk8"))
-    testCompile("junit", "junit", "4.12")
+    testCompile("junit:junit:4.12")
+    testCompile("org.mockito:mockito-core:2.23.0")
+    testImplementation("com.nhaarman.mockitokotlin2:mockito-kotlin:2.0.0-RC3")
+    testImplementation(kotlin("reflect"))
 }
 
 configure<JavaPluginConvention> {

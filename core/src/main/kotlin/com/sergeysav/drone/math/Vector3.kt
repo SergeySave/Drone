@@ -42,7 +42,10 @@ data class Vector3(var x: Double = 0.0, var y: Double = 0.0, var z: Double = 0.0
             Vector3(y * other.z - z * other.y, z * other.x - x * other.z,
                                              x * other.y - y * other.x)
     
-    fun normalize() = timesAssign(1/length)
+    fun normalize(): Vector3 {
+        timesAssign(1/length)
+        return this
+    }
 }
 
 val ZERO: Vector3

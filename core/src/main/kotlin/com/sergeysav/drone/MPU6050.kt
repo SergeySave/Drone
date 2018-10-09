@@ -3,7 +3,9 @@ package com.sergeysav.drone
 import com.sergeysav.drone.math.Vector3
 import com.sergeysav.drone.property.BooleanBitfieldProperty
 import com.sergeysav.drone.property.EnumBitfieldProperty
-import com.sergeysav.drone.property.I2CProperty
+import com.sergeysav.drone.property.I2CArrayProperty
+import com.sergeysav.drone.property.I2CSingleProperty
+import kotlin.experimental.and
 import kotlin.experimental.or
 
 /**
@@ -12,47 +14,47 @@ import kotlin.experimental.or
  *
  * @author sergeys
  */
-class MPU6050(gpio: GPIO, address: Int) {
+class MPU6050(gpio: GPIOService, address: Int) {
     
     private val i2CDevice = gpio.getI2CDevice(1, address)
     
     /**
      * Sample rate = output rate / (1 + sampleRateDivisor)
      */
-    var sampleRateDivisor by I2CProperty(i2CDevice, SMPLRT_DIV)
+    var sampleRateDivisor by I2CSingleProperty(i2CDevice, SMPLRT_DIV)
     
     /**
      * Bits 7, 6 are unused
      * Bits 5-3 configure the external Frame Synchronization (FSYNC) pin sampling
      * Bits 2-0 configure the Digital Low Pass Filter (DLPF) setting
      */
-    private var config by I2CProperty(i2CDevice, CONFIG)
+    private var config by I2CSingleProperty(i2CDevice, CONFIG)
     
     /**
      * Bits 7, 6, 5 are X, Y, Z gyroscope self test bits
      * Bits 4-3 configure the gyroscope range
      * Bits 2-0 are unused
      */
-    private var gyroConfig by I2CProperty(i2CDevice, GYRO_CONFIG)
+    private var gyroConfig by I2CSingleProperty(i2CDevice, GYRO_CONFIG)
     
     /**
      * Bits 7, 6, 5 are X, Y, Z accelerometer self test bits
      * Bits 4-3 configure the accelerometer range
      * Bits 2-0 are unused
      */
-    private var accelConfig by I2CProperty(i2CDevice, ACCEL_CONFIG)
+    var accelConfig by I2CSingleProperty(i2CDevice, ACCEL_CONFIG)
     
     /**
      * Bits 4, 3, and 0 are used to set various interrupts
      */
-    private var interruptEnable by I2CProperty(i2CDevice, INT_ENABLE)
+    private var interruptEnable by I2CSingleProperty(i2CDevice, INT_ENABLE)
     
     /**
      * Bit 2 - Gyroscope reset
      * Bit 1 - Accelerometer reset
      * Bit 0 - Thermometer reet
      */
-    private var signalReset by I2CProperty(i2CDevice, SIG_RESET)
+    private var signalReset by I2CSingleProperty(i2CDevice, SIG_RESET)
     
     /**
      * Bit 7 - Device reset
@@ -62,7 +64,7 @@ class MPU6050(gpio: GPIO, address: Int) {
      * Bit 3 - Thermometer disable
      * Bits 2-0 clock selection
      */
-    private var powerManagement1 by I2CProperty(i2CDevice, PWR_MGMT_1)
+    private var powerManagement1 by I2CSingleProperty(i2CDevice, PWR_MGMT_1)
     
     /**
      * Bits 7-6 - Wake control
@@ -73,41 +75,28 @@ class MPU6050(gpio: GPIO, address: Int) {
      * Bit 1 - Gyroscope Y axis standby
      * Bit 0 - Gyroscope Z axis standby
      */
-    private var powerManagement2 by I2CProperty(i2CDevice, PWR_MGMT_2)
+    private var powerManagement2 by I2CSingleProperty(i2CDevice, PWR_MGMT_2)
     
     //Acceleration registers
-    private var accelXH by I2CProperty(i2CDevice, ACCEL_XH)
-    private var accelXL by I2CProperty(i2CDevice, ACCEL_XL)
-    private var accelYH by I2CProperty(i2CDevice, ACCEL_YH)
-    private var accelYL by I2CProperty(i2CDevice, ACCEL_YL)
-    private var accelZH by I2CProperty(i2CDevice, ACCEL_ZH)
-    private var accelZL by I2CProperty(i2CDevice, ACCEL_ZL)
-    
+    private var accel by I2CArrayProperty(i2CDevice, ACCEL_LOW, ACCEL_HIGH)
+
     //Temperature registers
-    private var tempH by I2CProperty(i2CDevice, TEMP_H)
-    private var tempL by I2CProperty(i2CDevice, TEMP_L)
+    private var temp by I2CArrayProperty(i2CDevice, TEMP_LOW, TEMP_HIGH)
     
     //Gyroscope registers
-    private var gyroXH by I2CProperty(i2CDevice, GYRO_XH)
-    private var gyroXL by I2CProperty(i2CDevice, GYRO_XL)
-    private var gyroYH by I2CProperty(i2CDevice, GYRO_YH)
-    private var gyroYL by I2CProperty(i2CDevice, GYRO_YL)
-    private var gyroZH by I2CProperty(i2CDevice, GYRO_ZH)
-    private var gyroZL by I2CProperty(i2CDevice, GYRO_ZL)
+    private var gyro by I2CArrayProperty(i2CDevice, GYRO_LOW, GYRO_HIGH)
     
     var dlpf by EnumBitfieldProperty(0, 2, ::config, DLPF.values())
     var extSync by EnumBitfieldProperty(3, 5, ::config, ExtSync.values())
-    private var gyroRangeRaw by EnumBitfieldProperty(3, 4, ::gyroConfig,
-                                                                                  GyroRange.values())
-    private var accelRangeRaw by EnumBitfieldProperty(3, 4, ::accelConfig,
-                                                                                   AccelRange.values())
+    private var gyroRangeRaw by EnumBitfieldProperty(3, 4, ::gyroConfig, GyroRange.values())
+    var accelRangeRaw by EnumBitfieldProperty(3, 4, ::accelConfig, AccelRange.values())
     var fifoOverflowInterruptEnable by BooleanBitfieldProperty(4, ::interruptEnable)
     var i2cMasterInterruptEnable by BooleanBitfieldProperty(3, ::interruptEnable)
     var dataReadyInterruptEnable by BooleanBitfieldProperty(0, ::interruptEnable)
     private var gyroReset by BooleanBitfieldProperty(2, ::signalReset)
     private var accelReset by BooleanBitfieldProperty(1, ::signalReset)
     private var tempReset by BooleanBitfieldProperty(0, ::signalReset)
-    private var reset by BooleanBitfieldProperty(7, ::powerManagement1)
+    var reset by BooleanBitfieldProperty(7, ::powerManagement1)
     var sleep by BooleanBitfieldProperty(6, ::powerManagement1)
     var cycle by BooleanBitfieldProperty(5, ::powerManagement1)
     var thermometerDisable by BooleanBitfieldProperty(3, ::powerManagement1)
@@ -150,60 +139,48 @@ class MPU6050(gpio: GPIO, address: Int) {
         sleep = false
     }
     
-    val accelX: Double
-        get() = ((accelXH.toInt() shl 8).toShort() or (accelXL).toShort()) * accelRange.scaleFactor
-
-    val accelY: Double
-        get() = ((accelYH.toInt() shl 8).toShort() or (accelYL).toShort()) * accelRange.scaleFactor
-
-    val accelZ: Double
-        get() = ((accelZH.toInt() shl 8).toShort() or (accelZL).toShort()) * accelRange.scaleFactor
-    
     val accelerometer: Vector3
-        get() = Vector3(accelX, accelY, accelZ)
+        get() {
+            val raw = accel
+            return Vector3(((raw[0].toInt() shl 8).toShort() or (raw[1].toShort() and 0xFF)).toDouble(),
+                           ((raw[2].toInt() shl 8).toShort() or (raw[3].toShort() and 0xFF)).toDouble(),
+                           ((raw[4].toInt() shl 8).toShort() or (raw[5].toShort() and 0xFF)).toDouble()) * accelRange.scaleFactor
+        }
     
-    val thermometer: Double = (((tempH.toInt() shl 8).toShort() or (tempL).toShort()) / 340.0) + 36.53
-    
-    val gyroX: Double
-        get() = ((gyroXH.toInt() shl 8).toShort() or (gyroXL).toShort()) * gyroRange.scaleFactor
-
-    val gyroY: Double
-        get() = ((gyroYH.toInt() shl 8).toShort() or (gyroYL).toShort()) * gyroRange.scaleFactor
-
-    val gyroZ: Double
-        get() = ((gyroZH.toInt() shl 8).toShort() or (gyroZL).toShort()) * gyroRange.scaleFactor
+    val thermometer: Double
+        get() {
+            val raw = temp
+            return (((raw[0].toInt() shl 8).toShort() or (raw[1].toShort() and 0xFF)) / 340.0) + 36.53
+        }
 
     val gyroscope: Vector3
-        get() = Vector3(gyroX, gyroY, gyroZ)
+        get() {
+            val raw = gyro
+            return Vector3(((raw[0].toInt() shl 8).toShort() or (raw[1].toShort() and 0xFF)).toDouble(),
+                           ((raw[2].toInt() shl 8).toShort() or (raw[3].toShort() and 0xFF)).toDouble(),
+                           ((raw[4].toInt() shl 8).toShort() or (raw[5].toShort() and 0xFF)).toDouble()) * gyroRange.scaleFactor
+        }
 
     companion object {
         const val GRAVITY: Double = 9.80665
         
-        const val SMPLRT_DIV: Byte = 25
-        const val CONFIG: Byte = 26
-        const val GYRO_CONFIG: Byte = 27
-        const val ACCEL_CONFIG: Byte = 28
-        const val INT_ENABLE: Byte = 56
-        const val SIG_RESET: Byte = 104
-        const val PWR_MGMT_1: Byte = 107
-        const val PWR_MGMT_2: Byte = 108
+        const val SMPLRT_DIV = 25
+        const val CONFIG = 26
+        const val GYRO_CONFIG = 27
+        const val ACCEL_CONFIG = 28
+        const val INT_ENABLE = 56
+        const val SIG_RESET = 104
+        const val PWR_MGMT_1 = 107
+        const val PWR_MGMT_2 = 108
         
-        const val ACCEL_XH: Byte = 59
-        const val ACCEL_XL: Byte = 60
-        const val ACCEL_YH: Byte = 61
-        const val ACCEL_YL: Byte = 62
-        const val ACCEL_ZH: Byte = 63
-        const val ACCEL_ZL: Byte = 64
+        const val ACCEL_LOW = 59
+        const val ACCEL_HIGH = 64
         
-        const val TEMP_H: Byte = 65
-        const val TEMP_L: Byte = 66
+        const val TEMP_LOW = 65
+        const val TEMP_HIGH = 66
     
-        const val GYRO_XH: Byte = 67
-        const val GYRO_XL: Byte = 68
-        const val GYRO_YH: Byte = 69
-        const val GYRO_YL: Byte = 70
-        const val GYRO_ZH: Byte = 71
-        const val GYRO_ZL: Byte = 72
+        const val GYRO_LOW = 67
+        const val GYRO_HIGH = 72
         
         enum class DLPF(override val value: Byte): BValued {
             /**
