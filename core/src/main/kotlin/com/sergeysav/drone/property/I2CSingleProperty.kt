@@ -1,6 +1,6 @@
 package com.sergeysav.drone.property
 
-import com.sergeysav.drone.I2CDeviceService
+import com.sergeysav.drone.io.I2CDeviceService
 import kotlin.properties.ReadWriteProperty
 import kotlin.reflect.KProperty
 

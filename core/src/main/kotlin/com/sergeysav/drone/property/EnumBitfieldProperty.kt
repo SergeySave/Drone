@@ -1,6 +1,5 @@
 package com.sergeysav.drone.property
 
-import com.sergeysav.drone.BValued
 import kotlin.experimental.and
 import kotlin.experimental.inv
 import kotlin.experimental.or
@@ -13,7 +12,7 @@ import kotlin.reflect.KProperty
  *
  * @constructor Creates a new EnumBitfieldProperty<T>
  */
-class EnumBitfieldProperty<T>(private val minBit: Int, maxBit: Int, private val parent: KMutableProperty0<Byte>, options: Array<T>) : ReadWriteProperty<Any, T> where T: Enum<T>, T : BValued {
+class EnumBitfieldProperty<T>(private val minBit: Int, maxBit: Int, private val parent: KMutableProperty0<Byte>, options: Array<T>) : ReadWriteProperty<Any, T> where T: Enum<T>, T : ByteValued {
     
     private val bits: Byte = ((-1 shl (maxBit - minBit + 1)).inv() shl minBit).toByte()
     private val negBits = bits.inv()

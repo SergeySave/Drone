@@ -1,7 +1,6 @@
-
+package com.sergeysav.drone.io
 import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.mock
-import com.sergeysav.drone.I2CDeviceService
 import com.sergeysav.drone.MPU6050
 import org.junit.Assert.assertEquals
 import org.junit.Before
@@ -21,6 +20,8 @@ class MPU6050Test {
         bytes = ByteArray(128)
         
         val i2cDevice = object : I2CDeviceService {
+            override fun close() {}
+    
             override fun read(address: Int): Byte? = bytes[address]
         
             override fun read(address: Int, buffer: ByteArray): Int {

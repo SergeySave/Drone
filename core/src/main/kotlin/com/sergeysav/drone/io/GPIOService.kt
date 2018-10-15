@@ -1,4 +1,4 @@
-package com.sergeysav.drone
+package com.sergeysav.drone.io
 
 /**
  * @author sergeys
