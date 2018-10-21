@@ -2,6 +2,7 @@ package com.sergeysav.drone
 
 import com.sergeysav.drone.io.GPIOService
 import com.sergeysav.drone.math.Vector3
+import com.sergeysav.drone.math.Z
 import com.sergeysav.drone.property.BooleanBitfieldProperty
 import com.sergeysav.drone.property.ByteValued
 import com.sergeysav.drone.property.EnumBitfieldProperty
@@ -82,7 +83,7 @@ class MPU6050(gpio: GPIOService, address: Int) {
     
     //Acceleration registers
     private var accel by I2CArrayProperty(i2CDevice, ACCEL_LOW, ACCEL_HIGH)
-
+    
     //Temperature registers
     private var temp by I2CArrayProperty(i2CDevice, TEMP_LOW, TEMP_HIGH)
     
@@ -114,6 +115,9 @@ class MPU6050(gpio: GPIOService, address: Int) {
     var gyroXStandby by BooleanBitfieldProperty(2, ::powerManagement2)
     var gyroYStandby by BooleanBitfieldProperty(1, ::powerManagement2)
     var gyroZStandby by BooleanBitfieldProperty(0, ::powerManagement2)
+    
+    var accelOffset = Vector3()
+    var gyroOffset = Vector3()
     
     var gyroRange: GyroRange = GyroRange.DEG250
         set(value) {
@@ -153,112 +157,133 @@ class MPU6050(gpio: GPIOService, address: Int) {
                 try {
                     raw = accel
                     break
-                } catch (e: IOException) { }
+                } catch (e: IOException) {
+                }
             }
             
-            return Vector3(
+            return (Vector3(
                     ((raw[0].toInt() shl 8).toShort() or (raw[1].toShort() and 0xFF)).toDouble(),
                     ((raw[2].toInt() shl 8).toShort() or (raw[3].toShort() and 0xFF)).toDouble(),
-                    ((raw[4].toInt() shl 8).toShort() or (raw[5].toShort() and 0xFF)).toDouble()) * accelRange.scaleFactor
+                    ((raw[4].toInt() shl 8).toShort() or (raw[5].toShort() and 0xFF)).toDouble()) * accelRange.scaleFactor) - accelOffset
         }
     
     val thermometer: Double
         get() {
             var raw: ByteArray
-    
+            
             while (true) {
                 try {
                     raw = temp
                     break
-                } catch (e: IOException) { }
+                } catch (e: IOException) {
+                }
             }
             
             return (((raw[0].toInt() shl 8).toShort() or (raw[1].toShort() and 0xFF)) / 340.0) + 36.53
         }
-
+    
     val gyroscope: Vector3
         get() {
             var raw: ByteArray
-    
+            
             while (true) {
                 try {
                     raw = gyro
                     break
-                } catch (e: IOException) { }
+                } catch (e: IOException) {
+                }
             }
             
-            return Vector3(
+            return (Vector3(
                     ((raw[0].toInt() shl 8).toShort() or (raw[1].toShort() and 0xFF)).toDouble(),
                     ((raw[2].toInt() shl 8).toShort() or (raw[3].toShort() and 0xFF)).toDouble(),
-                    ((raw[4].toInt() shl 8).toShort() or (raw[5].toShort() and 0xFF)).toDouble()) * gyroRange.scaleFactor
+                    ((raw[4].toInt() shl 8).toShort() or (raw[5].toShort() and 0xFF)).toDouble()) * gyroRange.scaleFactor) - gyroOffset
         }
     
     val accelGyro: Pair<Vector3, Vector3>
         get() {
             var raw: ByteArray
-    
+            
             while (true) {
                 try {
                     raw = fullOutputData
                     break
-                } catch (e: IOException) { }
-            }
-
-            return (Vector3(
-                    ((raw[0].toInt() shl 8).toShort() or (raw[1].toShort() and 0xFF)).toDouble(),
-                    ((raw[2].toInt() shl 8).toShort() or (raw[3].toShort() and 0xFF)).toDouble(),
-                    ((raw[4].toInt() shl 8).toShort() or (raw[5].toShort() and 0xFF)).toDouble()) * accelRange.scaleFactor) to
-                    Vector3 (
-                    ((raw[8].toInt() shl 8).toShort() or (raw[9].toShort() and 0xFF)).toDouble(),
-                    ((raw[10].toInt() shl 8).toShort() or (raw[11].toShort() and 0xFF)).toDouble(),
-                    ((raw[12].toInt() shl 8).toShort() or (raw[13].toShort() and 0xFF)).toDouble()) * gyroRange.scaleFactor
-        }
-    
-    val rawAccelGyro: ShortArray
-        get() {
-            var raw: ByteArray
-    
-            while (true) {
-                try {
-                    raw = fullOutputData
-                    break
-                } catch (e: IOException) { }
+                } catch (e: IOException) {
+                }
             }
             
-            return shortArrayOf(((raw[0].toInt() shl 8).toShort() or (raw[1].toShort() and 0xFF)),
-                                ((raw[2].toInt() shl 8).toShort() or (raw[3].toShort() and 0xFF)),
-                                ((raw[4].toInt() shl 8).toShort() or (raw[5].toShort() and 0xFF)),
-                                ((raw[8].toInt() shl 8).toShort() or (raw[9].toShort() and 0xFF)),
-                                ((raw[10].toInt() shl 8).toShort() or (raw[11].toShort() and 0xFF)),
-                                ((raw[12].toInt() shl 8).toShort() or (raw[13].toShort() and 0xFF)))
+            return ((Vector3(
+                    ((raw[0].toInt() shl 8).toShort() or (raw[1].toShort() and 0xFF)).toDouble(),
+                    ((raw[2].toInt() shl 8).toShort() or (raw[3].toShort() and 0xFF)).toDouble(),
+                    ((raw[4].toInt() shl 8).toShort() or (raw[5].toShort() and 0xFF)).toDouble()) * accelRange.scaleFactor) - accelOffset) to
+                    (Vector3(
+                            ((raw[8].toInt() shl 8).toShort() or (raw[9].toShort() and 0xFF)).toDouble(),
+                            ((raw[10].toInt() shl 8).toShort() or (raw[11].toShort() and 0xFF)).toDouble(),
+                            ((raw[12].toInt() shl 8).toShort() or (raw[13].toShort() and 0xFF)).toDouble()) * gyroRange.scaleFactor) - gyroOffset
         }
     
     val accelThermGyro: Triple<Vector3, Double, Vector3>
         get() {
             var raw: ByteArray
-    
+            
             while (true) {
                 try {
                     raw = fullOutputData
                     break
-                } catch (e: IOException) { }
+                } catch (e: IOException) {
+                }
             }
             
-            return Triple(Vector3(
+            return Triple((Vector3(
                     ((raw[0].toInt() shl 8).toShort() or (raw[1].toShort() and 0xFF)).toDouble(),
                     ((raw[2].toInt() shl 8).toShort() or (raw[3].toShort() and 0xFF)).toDouble(),
-                    ((raw[4].toInt() shl 8).toShort() or (raw[5].toShort() and 0xFF)).toDouble()) * accelRange.scaleFactor,
-                    (((raw[6].toInt() shl 8).toShort() or (raw[7].toShort() and 0xFF)) / 340.0) + 36.53,
-                          Vector3 (
+                    ((raw[4].toInt() shl 8).toShort() or (raw[5].toShort() and 0xFF)).toDouble()) * accelRange.scaleFactor) - accelOffset,
+                          (((raw[6].toInt() shl 8).toShort() or (raw[7].toShort() and 0xFF)) / 340.0) + 36.53,
+                          (Vector3(
                                   ((raw[8].toInt() shl 8).toShort() or (raw[9].toShort() and 0xFF)).toDouble(),
                                   ((raw[10].toInt() shl 8).toShort() or (raw[11].toShort() and 0xFF)).toDouble(),
-                                  ((raw[12].toInt() shl 8).toShort() or (raw[13].toShort() and 0xFF)).toDouble()) * gyroRange.scaleFactor)
+                                  ((raw[12].toInt() shl 8).toShort() or (raw[13].toShort() and 0xFF)).toDouble()) * gyroRange.scaleFactor) - gyroOffset)
         }
     
     fun close() {
         i2CDevice.close()
     }
-
+    
+    fun calibrate(measurements: Int, delay: Double = 0.002, gravity: Vector3 = Z * GRAVITY) {
+        accelOffset = Vector3()
+        gyroOffset = Vector3()
+        
+        var i = -100
+        val delayNanos = delay * 1E6
+    
+        val aMean = Vector3()
+        val gMean = Vector3()
+    
+        var last = System.nanoTime()
+        while (i < measurements) {
+            if (System.nanoTime() - last >= delayNanos) {
+                last = System.nanoTime()
+                val (a, g) = accelGyro
+            
+                a -= gravity
+            
+                if (i >= 0) {
+                    aMean += a
+                    gMean += g
+                }
+                i++
+            }
+        }
+    
+        aMean /= measurements.toDouble()
+        gMean /= measurements.toDouble()
+    
+        accelOffset = aMean
+        accelOffset.reduceToFloat()
+        gyroOffset = gMean
+        gyroOffset.reduceToFloat()
+    }
+    
     companion object {
         const val GRAVITY: Double = 9.80665
         
@@ -276,7 +301,7 @@ class MPU6050(gpio: GPIOService, address: Int) {
         
         const val TEMP_LOW = 65
         const val TEMP_HIGH = 66
-    
+        
         const val GYRO_LOW = 67
         const val GYRO_HIGH = 72
         
@@ -321,6 +346,7 @@ class MPU6050(gpio: GPIOService, address: Int) {
              */
             SEVEN(7);
         }
+        
         enum class ExtSync(override val value: Byte): ByteValued {
             DISABLED(0),
             TEMP_OUT_L0(1),
@@ -331,6 +357,7 @@ class MPU6050(gpio: GPIOService, address: Int) {
             ACCEL_YOUT_L0(6),
             ACCEL_ZOUT_L0(7);
         }
+        
         enum class GyroRange(override val value: Byte, val scaleFactor: Double):
                 ByteValued {
             /**
@@ -350,6 +377,7 @@ class MPU6050(gpio: GPIOService, address: Int) {
              */
             DEG2000(3, 2000.0 / Short.MAX_VALUE);
         }
+        
         enum class AccelRange(override val value: Byte, val scaleFactor: Double):
                 ByteValued {
             /**
@@ -359,16 +387,17 @@ class MPU6050(gpio: GPIOService, address: Int) {
             /**
              * ±4g
              */
-            G4(1,  4 * GRAVITY / Short.MAX_VALUE),
+            G4(1, 4 * GRAVITY / Short.MAX_VALUE),
             /**
              * ±8g
              */
-            G8(2,  8 * GRAVITY / Short.MAX_VALUE),
+            G8(2, 8 * GRAVITY / Short.MAX_VALUE),
             /**
              * ±16g
              */
-            G16(3,  16 * GRAVITY / Short.MAX_VALUE);
+            G16(3, 16 * GRAVITY / Short.MAX_VALUE);
         }
+        
         enum class ClockMode(override val value: Byte): ByteValued {
             INTERNAL_8MHZ(0),
             PLL_X_GYRO(1),
@@ -385,6 +414,7 @@ class MPU6050(gpio: GPIOService, address: Int) {
              */
             STOP_CLOCK_RESET_TIMING(7);
         }
+        
         enum class WakeControl(override val value: Byte): ByteValued {
             HZ1_25(0),
             HZ5(1),

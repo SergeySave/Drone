@@ -1,5 +1,6 @@
 package com.sergeysav.drone.math
 
+import com.beust.klaxon.Json
 import kotlin.math.sqrt
 
 /**
@@ -9,8 +10,10 @@ import kotlin.math.sqrt
  */
 data class Vector3(var x: Double = 0.0, var y: Double = 0.0, var z: Double = 0.0) {
     
+    @Json(ignored = true)
     val length: Double
         get() = sqrt(x * x + y * y + z * z)
+    @Json(ignored = true)
     val length2: Double
         get() = x * x + y * y + z * z
     
@@ -63,6 +66,13 @@ data class Vector3(var x: Double = 0.0, var y: Double = 0.0, var z: Double = 0.0
     }
     
     fun normalize() = this / length
+    
+    fun reduceToFloat(): Vector3 {
+        x = x.toFloat().toDouble()
+        y = y.toFloat().toDouble()
+        z = z.toFloat().toDouble()
+        return this
+    }
 }
 
 val ZERO: Vector3
