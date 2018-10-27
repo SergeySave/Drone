@@ -1,6 +1,5 @@
 package com.sergeysav.drone.math
 
-import com.beust.klaxon.Json
 import kotlin.math.sqrt
 
 /**
@@ -9,13 +8,6 @@ import kotlin.math.sqrt
  * @constructor Creates a new Vector3
  */
 data class Vector3(var x: Double = 0.0, var y: Double = 0.0, var z: Double = 0.0) {
-    
-    @Json(ignored = true)
-    val length: Double
-        get() = sqrt(x * x + y * y + z * z)
-    @Json(ignored = true)
-    val length2: Double
-        get() = x * x + y * y + z * z
     
     operator fun plus(other: Vector3) =
             Vector3(x + other.x, y + other.y, z + other.z)
@@ -60,6 +52,12 @@ data class Vector3(var x: Double = 0.0, var y: Double = 0.0, var z: Double = 0.0
     fun rotated(vector3: Vector3) {
         rotated(vector3, vector3.length)
     }
+    fun rotated(quaternion: Quaternion) {
+        val result = quaternion * Quaternion(this) * quaternion.inverse()
+        this.x = result.x
+        this.y = result.y
+        this.z = result.z
+    }
     
     fun normalized() {
         divAssign(length)
@@ -87,6 +85,11 @@ val Y: Vector3
 val Z: Vector3
     get() = Vector3(0.0, 0.0, 1.0)
 
+val Vector3.length: Double
+    get() = sqrt(x * x + y * y + z * z)
+val Vector3.length2: Double
+    get() = x * x + y * y + z * z
+
 //These operators are here so you have to choose to import these, so if you want to use your own definitions
 // for these functions
 //Design decision to not make a copy for unary operators
@@ -99,4 +102,3 @@ operator fun Vector3.unaryMinus(): Vector3 {
 }
 //Design decision to make dot product the default vector * vector operation
 operator fun Vector3.times(other: Vector3) = this dot other
-

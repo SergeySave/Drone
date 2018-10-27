@@ -16,6 +16,7 @@ repositories {
 
 dependencies {
     compile(project(":core"))
+    compile("com.beust:klaxon:3.0.1")
     compile("com.pi4j:pi4j-core:1.2-SNAPSHOT")
     testCompile("junit", "junit", "4.12")
 }

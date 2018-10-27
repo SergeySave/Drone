@@ -15,7 +15,7 @@ class MPUCalibrationMenu(val mpu6050: MPU6050) : Menu {
     override val options: Array<Pair<String, (Scanner)->Menu?>> =
             arrayOf("Calibrate" to { _ ->
                 println("Calibrating... Please wait...")
-                mpu6050.calibrate(50000)
+                mpu6050.calibrate(10000)
                 
                 saveMPUConfig(MPU6050Config(mpu6050))
                 null

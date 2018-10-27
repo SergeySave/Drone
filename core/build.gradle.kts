@@ -15,7 +15,6 @@ repositories {
 
 dependencies {
     compile(kotlin("stdlib-jdk8"))
-    compile("com.beust:klaxon:3.0.1")
     testCompile("junit:junit:4.12")
     testCompile("org.mockito:mockito-core:2.23.0")
     testImplementation("com.nhaarman.mockitokotlin2:mockito-kotlin:2.0.0-RC3")

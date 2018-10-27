@@ -5,9 +5,11 @@ import com.sergeysav.drone.Integrator
 import com.sergeysav.drone.MPU6050
 import com.sergeysav.drone.MPU6050.Companion.GRAVITY
 import com.sergeysav.drone.math.Z
-import com.sergeysav.drone.math.timesAssign
+import com.sergeysav.drone.utf8Charset
+import java.nio.file.Files
+import java.nio.file.Paths
 import java.util.Scanner
-import kotlin.math.abs
+import kotlin.math.PI
 
 /**
  * @author sergeys
@@ -21,12 +23,9 @@ class FlyMenu(mpu6050: MPU6050) : Menu {
                 val intAcc = Integrator()
                 val intVel = Integrator()
 
-                val intGyr = GyroIntegrator()
-
+                val intGyr = GyroIntegrator(0.994)
+                
                 var lastString = ""
-
-                val scaledAccelDeadzone = 8 * mpu6050.accelRange.scaleFactor
-                val scaledGyroDeadzone = 2 * mpu6050.gyroRange.scaleFactor
                 
                 var running = true
                 
@@ -40,6 +39,11 @@ class FlyMenu(mpu6050: MPU6050) : Menu {
                     isDaemon = true
                     start()
                 }
+    
+                val writer = Files.newBufferedWriter(Paths.get("rotation_data.csv"), utf8Charset)
+                writer.append("deltaNano,w,x,y,z")
+                writer.newLine()
+                val start = System.nanoTime()
 
                 var last = System.nanoTime()
                 while (running) {
@@ -49,27 +53,31 @@ class FlyMenu(mpu6050: MPU6050) : Menu {
                         last = curr
 
                         val (accelerometer, gyroscope) = mpu6050.accelGyro
+                        gyroscope *= (PI / 180)
                         gyroscope.reduceToFloat()
                         accelerometer.reduceToFloat()
                         
-                        if (abs(gyroscope.x) < scaledGyroDeadzone) gyroscope.x = 0.0
-                        if (abs(gyroscope.y) < scaledGyroDeadzone) gyroscope.y = 0.0
-                        if (abs(gyroscope.z) < scaledGyroDeadzone) gyroscope.z = 0.0
-                        val orientation = intGyr(gyroscope, delta)
-
-                        accelerometer *= orientation.transpose()
+                        val orientation = intGyr(gyroscope, accelerometer, delta)
+    
+                        accelerometer.rotated(orientation)
                         accelerometer -= Z * GRAVITY
                         accelerometer.reduceToFloat()
                         
-                        if (abs(accelerometer.x) < scaledAccelDeadzone) accelerometer.x = 0.0
-                        if (abs(accelerometer.y) < scaledAccelDeadzone) accelerometer.y = 0.0
-                        if (abs(accelerometer.z) < scaledAccelDeadzone) accelerometer.z = 0.0
-
                         val velocity = intAcc(accelerometer, delta)
                         velocity.reduceToFloat()
                         val position = intVel(velocity, delta)
                         position.reduceToFloat()
-
+    
+                        writer.append((System.nanoTime() - start).toString())
+                        writer.append(',')
+                        writer.append(orientation.w.toString())
+                        writer.append(',')
+                        writer.append(orientation.x.toString())
+                        writer.append(',')
+                        writer.append(orientation.y.toString())
+                        writer.append(',')
+                        writer.append(orientation.z.toString())
+                        writer.newLine()
                         val a = "% .4f % .4f % .4f".format(accelerometer.x, accelerometer.y, accelerometer.z)
                         val v = "% .4f % .4f % .4f".format(velocity.x, velocity.y, velocity.z)
                         val p = "% .4f % .4f % .4f".format(position.x, position.y, position.z)
@@ -78,6 +86,8 @@ class FlyMenu(mpu6050: MPU6050) : Menu {
                         print(lastString)
                     }
                 }
+                
+                writer.close()
     
                 null
             })

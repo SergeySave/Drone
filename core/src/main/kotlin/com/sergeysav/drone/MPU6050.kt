@@ -212,14 +212,15 @@ class MPU6050(gpio: GPIOService, address: Int) {
                 }
             }
             
+            //The upper portion is not masked so that negatives work correctly
             return ((Vector3(
-                    ((raw[0].toInt() shl 8).toShort() or (raw[1].toShort() and 0xFF)).toDouble(),
-                    ((raw[2].toInt() shl 8).toShort() or (raw[3].toShort() and 0xFF)).toDouble(),
-                    ((raw[4].toInt() shl 8).toShort() or (raw[5].toShort() and 0xFF)).toDouble()) * accelRange.scaleFactor) - accelOffset) to
+                    (((raw[0].toInt() shl 8)) or (raw[1].toInt() and 0xFF)).toDouble(),
+                    (((raw[2].toInt() shl 8)) or (raw[3].toInt() and 0xFF)).toDouble(),
+                    (((raw[4].toInt() shl 8)) or (raw[5].toInt() and 0xFF)).toDouble()) * accelRange.scaleFactor) - accelOffset) to
                     (Vector3(
-                            ((raw[8].toInt() shl 8).toShort() or (raw[9].toShort() and 0xFF)).toDouble(),
-                            ((raw[10].toInt() shl 8).toShort() or (raw[11].toShort() and 0xFF)).toDouble(),
-                            ((raw[12].toInt() shl 8).toShort() or (raw[13].toShort() and 0xFF)).toDouble()) * gyroRange.scaleFactor) - gyroOffset
+                            (((raw[8].toInt() shl 8)) or (raw[9].toInt() and 0xFF)).toDouble(),
+                            (((raw[10].toInt() shl 8)) or (raw[11].toInt() and 0xFF)).toDouble(),
+                            (((raw[12].toInt() shl 8)) or (raw[13].toInt() and 0xFF)).toDouble()) * gyroRange.scaleFactor) - gyroOffset
         }
     
     val accelThermGyro: Triple<Vector3, Double, Vector3>
